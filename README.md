@@ -1,50 +1,91 @@
-# Welcome to your Expo app 👋
+# Tukutane Events App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## Internship Challenge Submission
 
-## Get started
+### Overview
+This is my submission for the Tukutane Internship Challenge. I've built a mobile application using React Native (Expo) and Supabase that showcases event discovery and management. The app goes beyond the basic requirements by implementing additional features that demonstrate my full-stack development skills.
 
-1. Install dependencies
+### Features
 
+#### Core Requirements
+- ✅ Event listing with real data from Supabase
+- ✅ Event details with image, name, category, and RSVP functionality
+- ✅ Clean, responsive UI built with React Native Elements
+
+#### Bonus Features
+- 🔒 User authentication (Sign In/Sign Up)
+- 📅 Save events to device calendar
+- 🔍 Advanced filtering and search functionality
+- 💾 Offline support with AsyncStorage
+- 🔄 Pull-to-refresh for latest events
+- 🌐 Cross-platform (iOS, Android, Web)
+
+### Tech Stack
+- **Frontend**: React Native (Expo)
+- **UI Components**: React Native Elements
+- **Backend**: Supabase
+  - Authentication
+  - Real-time Database
+  - Storage for event images
+- **Navigation**: React Navigation
+- **State Management**: React Context API
+- **Icons**: Expo Vector Icons
+
+### Setup Instructions
+
+1. **Clone the repository**
    ```bash
-   npm install
+   git clone <repository-url>
+   cd Tukutane
    ```
 
-2. Start the app
-
+2. **Install dependencies**
    ```bash
-   npx expo start
+   pnpm install
    ```
 
-In the output, you'll find options to open the app in a
+3. **Environment Setup**
+   Create a `.env` file in the root directory with your Supabase credentials:
+   ```
+   EXPO_PUBLIC_SUPABASE_URL=your-supabase-url
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+4. **Start the development server**
+   ```bash
+   pnpm start
+   ```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+### Project Structure
+```
+Tukutane/
+├── app/                 # Main application code
+│   ├── (tabs)/          # Tab navigation
+│   ├── auth/            # Authentication screens
+│   ├── _layout.tsx      # Root layout
+│   └── +not-found.tsx   # 404 page
+├── assets/             # Static assets
+├── lib/
+│   └── supabase.ts     # Supabase client configuration
+└── supabase/           # Database migrations and types
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Demonstration
+[Include screenshots or a video demo here]
 
-## Learn more
+### Additional Notes
+- The app follows modern React Native best practices
+- Clean and maintainable code structure
+- Proper error handling and loading states
+- Responsive design for various screen sizes
 
-To learn more about developing your project with Expo, look at the following resources:
+### Future Enhancements
+- Push notifications for event reminders
+- Social sharing of events
+- User profiles and event history
+- Rating and review system for events
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Submission Details
+Submitted by: Joel Mbaka  
+Email: [Your Email]  
+Date: July 22, 2025
