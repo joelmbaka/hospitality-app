@@ -1,7 +1,8 @@
--- Create resource_types table
-CREATE TABLE resource_types (
+-- Create resources table
+CREATE TABLE resources (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  service_type_id UUID NOT NULL REFERENCES service_types(id) ON DELETE CASCADE,
+  property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  service_id UUID NOT NULL REFERENCES services(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
   specifications JSONB,
@@ -9,15 +10,14 @@ CREATE TABLE resource_types (
 );
 
 -- Enable RLS
-ALTER TABLE resource_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE resources ENABLE ROW LEVEL SECURITY;
 
 -- Property manager access policy
-CREATE POLICY "Property managers can manage resource types"
-ON resource_types FOR ALL USING (
+CREATE POLICY "Property managers can manage resources"
+ON resources FOR ALL USING (
   EXISTS (
     SELECT 1 FROM property_managers pm
-    JOIN service_types st ON st.property_id = pm.property_id
     WHERE pm.user_id = auth.uid()
-    AND st.id = resource_types.service_type_id
+      AND pm.property_id = resources.property_id
   )
 );

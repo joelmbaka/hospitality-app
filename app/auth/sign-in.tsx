@@ -22,7 +22,7 @@ export default function SignIn() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>my health hub</Text>
+      <Text style={styles.title}>sign in to maxim hotels</Text>
       <View style={[styles.verticallySpaced, styles.mt20]}>
         <Input
           label="Email"

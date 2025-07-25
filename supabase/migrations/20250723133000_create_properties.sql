@@ -19,27 +19,29 @@ COMMENT ON COLUMN properties.address IS 'Full address in structured JSON format'
 COMMENT ON COLUMN properties.contact_info IS 'Phone, email, and other contact details';
 COMMENT ON COLUMN properties.operational_hours IS 'Operating hours for each day of the week';
 
--- Create service_types table
-CREATE TABLE service_types (
+-- Global services catalog (no per-property column)
+CREATE TABLE services (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
-  name TEXT NOT NULL CHECK (name IN ('accommodation', 'dining', 'events', 'comprehensive')),
+  name TEXT UNIQUE NOT NULL,
   description TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Add array column on properties referencing services
+ALTER TABLE properties
+ADD COLUMN services UUID[] NOT NULL DEFAULT '{}'::uuid[];
+
 -- Enable RLS for both tables
 ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
-ALTER TABLE service_types ENABLE ROW LEVEL SECURITY;
+-- services table is globally readable
+ALTER TABLE services ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Services are viewable by everyone"
+ON services FOR SELECT USING (true);
 
--- Security Policies
+
+-- Security Policy
 CREATE POLICY "Properties are viewable by everyone" 
-ON properties 
-FOR SELECT USING (true);
-
-CREATE POLICY "Service types are viewable by everyone" 
-ON service_types 
-FOR SELECT USING (true);
+ON properties FOR SELECT USING (true);
 
 -- Note: We'll create the property_managers table in a separate migration
 -- For now, we leave the more complex policies commented out until that table exists
@@ -59,7 +61,7 @@ FOR ALL USING (
 
 -- Create indexes
 CREATE INDEX idx_properties_type ON properties(type);
-CREATE INDEX idx_service_types_property ON service_types(property_id);
+
 
 -- Add timestamp automation
 CREATE TRIGGER properties_modtime

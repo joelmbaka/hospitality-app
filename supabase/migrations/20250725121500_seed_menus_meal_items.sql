@@ -1,0 +1,3 @@
+-- Placeholder re-added to align local migrations with remote history.
+-- Original migration already applied on remote; content omitted intentionally.
+-- If you need to modify dining seed logic, create a NEW migration.

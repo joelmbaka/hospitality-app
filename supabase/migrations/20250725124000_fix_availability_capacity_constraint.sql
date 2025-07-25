@@ -1,0 +1,4 @@
+-- Migration placeholder to match remote history
+-- 2025-07-25 12:40:00 UTC
+-- The capacity CHECK constraint was already adjusted by 20250725123300.
+-- No-op placeholder; leave empty to keep histories aligned.

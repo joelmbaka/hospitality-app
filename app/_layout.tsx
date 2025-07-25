@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 export default function RootLayout() {
   const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [role, setRole] = useState<string | null>(null);
   const router = useRouter();
   const segments = useSegments();
 
@@ -21,18 +22,42 @@ export default function RootLayout() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // fetch user role whenever session changes
   useEffect(() => {
-    if (isLoading) return;
+    if (session?.user) {
+      supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+        .then(({ data, error }) => {
+          if (!error) {
+            setRole((data as any)?.role ?? 'guest');
+          }
+        });
+    } else {
+      setRole(null);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (isLoading || (session && !role)) return;
 
     const inAuthGroup = segments[0] === 'auth';
-    const inTabsGroup = segments[0] === '(tabs)';
+    const inGuestGroup = segments[0] === 'guest';
+    const inManagerGroup = segments[0] === 'manager';
 
-    if (session && !inTabsGroup) {
-      router.replace('/(tabs)');
-    } else if (!session && !inAuthGroup) {
-      router.replace('/auth/sign-in');
+    if (!session) {
+      if (!inAuthGroup) router.replace('/auth/sign-in');
+      return;
     }
-  }, [session, isLoading, segments]);
+
+    if (role === 'property_manager') {
+      if (!inManagerGroup) router.replace('/manager' as any);
+    } else {
+      if (!inGuestGroup) router.replace('/guest' as any);
+    }
+  }, [session, role, isLoading, segments]);
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
