@@ -1,33 +1,20 @@
 import { Button, Input } from '@rneui/themed'
-import { Session } from '@supabase/supabase-js'
+import useRequireAuth from '../hooks/useRequireAuth'
+import useSession from '../hooks/useSession'
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native'
 import { supabase } from '../../lib/supabase'
 
 export default function AccountScreen() {
-  const [session, setSession] = useState<Session | null>(null)
+  useRequireAuth();
+  const session = useSession();
   const [isFetching, setIsFetching] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
   const [username, setUsername] = useState('')
   const [website, setWebsite] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
 
-  useEffect(() => {
-    let isMounted = true;
-    
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (isMounted) setSession(session);
-    });
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (isMounted) setSession(session);
-    });
-    
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
+  
   
   useEffect(() => {
     if (session) {

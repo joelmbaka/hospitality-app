@@ -1,6 +1,8 @@
 import { View, Text, StyleSheet } from 'react-native';
+import useRequireAuth from '../hooks/useRequireAuth';
 
 export default function Bookings() {
+  useRequireAuth();
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Bookings</Text>

@@ -48,7 +48,12 @@ export default function RootLayout() {
     const inManagerGroup = segments[0] === 'manager';
 
     if (!session) {
-      if (!inAuthGroup) router.replace('/auth/sign-in');
+      if (inAuthGroup || inGuestGroup) return;
+      if (segments[0] === 'manager') {
+        router.replace('/auth/sign-in');
+      } else {
+        router.replace('/guest' as any);
+      }
       return;
     }
 
