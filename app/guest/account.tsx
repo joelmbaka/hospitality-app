@@ -110,11 +110,18 @@ export default function AccountScreen() {
           title={isUpdating ? 'Updating ...' : 'Update'}
           onPress={() => updateProfile({ username, website, avatar_url: avatarUrl })}
           disabled={isUpdating}
+          buttonStyle={{ backgroundColor: '#ffd33d' }}
+          titleStyle={{ color: '#25292e', fontWeight: 'bold' }}
         />
       </View>
 
       <View style={styles.verticallySpaced}>
-        <Button title="Sign Out" onPress={() => supabase.auth.signOut()} />
+        <Button
+          title="Sign Out"
+          onPress={() => supabase.auth.signOut()}
+          buttonStyle={{ backgroundColor: '#ff5252' }}
+          titleStyle={{ color: '#fff', fontWeight: 'bold' }}
+        />
       </View>
     </View>
   )

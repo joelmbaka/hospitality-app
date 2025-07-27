@@ -1,4 +1,4 @@
-import { Text, View, StyleSheet, FlatList, useWindowDimensions } from 'react-native';
+import { Text, View, StyleSheet, FlatList, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
@@ -9,10 +9,12 @@ export default function Index() {
   // Show 2 columns on devices wider than 768px (tablets/desktop)
   const numColumns = width >= 768 ? 2 : 1;
   const [properties, setProperties] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
 
   useEffect(() => {
     (async () => {
+      setLoading(true);
       const [{ data: propData, error: propErr }, { data: serviceData, error: svcErr }] = await Promise.all([
         supabase.from('properties').select('id,name,location,image_url,services'),
         supabase.from('services').select('id,name'),
@@ -29,8 +31,17 @@ export default function Index() {
         services: (p.services ?? []).map((id: string) => serviceMap[id] ?? id),
       }));
       setProperties(mapped);
+      setLoading(false);
     })();
   }, []);
+  if (loading) {
+    return (
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color="#ffd33d" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Welcome to Our Stays</Text>

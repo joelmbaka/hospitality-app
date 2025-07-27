@@ -48,15 +48,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="about"
-        options={{
-          title: 'About',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'information-circle' : 'information-circle-outline'} color={color} size={24}/>
-          ),
-        }}
-      />
+
       <Tabs.Screen
         name="account"
         options={{
@@ -66,6 +58,10 @@ export default function TabLayout() {
           ),
         }}
       />
+      {/* Hide about and property detail routes from tab bar */}
+      <Tabs.Screen name="about" options={{ href: null }} />
+      <Tabs.Screen name="property" options={{ href: null }} />
+      <Tabs.Screen name="property/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

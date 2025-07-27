@@ -1,9 +1,711 @@
-import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, Dimensions, Platform, ScrollView } from 'react-native';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+
+import { useNavigationState } from '@react-navigation/native';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../../../lib/supabase';
 
+
+const Tab = createMaterialTopTabNavigator();
+
+function OverviewTab() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [property, setProperty] = useState<any | null>(null);
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        setLoading(true);
+        const { data: prop, error } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('id', id)
+          .single();
+        if (error) throw error;
+        setProperty(prop);
+        if (prop?.services && prop.services.length > 0) {
+          const { data: svcRows, error: svcErr } = await supabase
+            .from('services')
+            .select('*')
+            .in('id', prop.services);
+          if (!svcErr) setServices(svcRows || []);
+        }
+      } catch (err) {
+        console.error('[OverviewTab] fetch property error', err);
+        setProperty(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <View style={[tabStyles.content, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color="#ffd33d" />
+      </View>
+    );
+  }
+
+  if (!property) {
+    return (
+      <View style={[tabStyles.content, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={styles.text}>Property not found.</Text>
+      </View>
+    );
+  }
+
+  const { name, description, type, address, contact_info } = property;
+
+  return (
+    <ScrollView style={tabStyles.content}>
+      <View style={overviewStyles.card}>
+      <Text style={tabStyles.heading}>{name}</Text>
+      {description && <Text style={[styles.text, { marginTop: 8 }]}>{description}</Text>}
+      <Text style={[styles.text, { marginTop: 12 }]}>Type: {type}</Text>
+      {address && (
+        <Text style={[styles.text, { marginTop: 4 }]}>Address: {JSON.stringify(address)}</Text>
+      )}
+      {contact_info && (
+        <Text style={[styles.text, { marginTop: 4 }]}>Contact: {JSON.stringify(contact_info)}</Text>
+      )}
+      {services.length > 0 && (
+        <View style={{ marginTop: 12 }}>
+          <Text style={[styles.text, { fontWeight: 'bold', marginBottom: 4 }]}>Services</Text>
+          {services.map((s) => (
+            <Text key={s.id} style={styles.text}>• {s.name}</Text>
+          ))}
+        </View>
+      )}
+      </View>
+    </ScrollView>
+  );
+}
+import { FlatList, Pressable, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
+
+function RoomsTab() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [resources, setResources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        setLoading(true);
+        // Find accommodation service id
+        const { data: svc, error: svcErr } = await supabase
+          .from('services')
+          .select('id')
+          .eq('name', 'accommodation')
+          .single();
+        if (svcErr) throw svcErr;
+
+        const { data, error } = await supabase
+          .from('resources')
+          .select('*')
+          .eq('property_id', id)
+          .eq('service_id', svc.id);
+        if (error) throw error;
+        console.log('[RoomsTab] fetched resources', data?.length);
+        setResources(data || []);
+      } catch (err) {
+        console.error('[RoomsTab] fetch resources error', err);
+        setResources([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <View style={[tabStyles.content, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={styles.text}>Loading rooms...</Text>
+      </View>
+    );
+  }
+
+  const renderItem = ({ item }: { item: any }) => {
+    return (
+      <View style={roomStyles.card}>
+        <View style={{ flex: 1, paddingRight: 12 }}>
+        <Text style={roomStyles.name}>{item.name}</Text>
+        <Text style={roomStyles.desc}>{item.description}</Text>
+        {item.price != null && (
+          <Text style={roomStyles.price}>${item.price.toFixed(2)}</Text>
+        )}
+        <Text style={roomStyles.specs}>{JSON.stringify(item.specifications)}</Text>
+        </View>
+        {/* TODO: fetch availability status */}
+        <Pressable style={roomStyles.button} onPress={() => {}}>
+          <Text style={roomStyles.buttonText}>Reserve</Text>
+        </Pressable>
+      </View>
+    );
+  };
+
+  if (resources.length === 0) {
+    return (
+      <View style={[tabStyles.content, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={styles.text}>No rooms found for this property.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={resources}
+      keyExtractor={(item) => item.id}
+      renderItem={renderItem}
+      contentContainerStyle={{ padding: 16 }}
+    />
+  );
+}
+
+const roomStyles = StyleSheet.create({
+  card: {
+    backgroundColor: '#35383d',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  name: {
+    color: '#ffd33d',
+    fontSize: 18,
+    marginBottom: 4,
+  },
+  desc: {
+    color: '#fff',
+    marginBottom: 4,
+  },
+  price: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  specs: {
+    color: '#bbb',
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  button: {
+    backgroundColor: '#ffd33d',
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+  },
+  buttonText: {
+    color: '#25292e',
+    fontWeight: 'bold',
+  },
+});
+
+const mealStyles = StyleSheet.create({
+  card: {
+    backgroundColor: '#35383d',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  name: {
+    color: '#ffd33d',
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  desc: {
+    color: '#fff',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  price: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  button: {
+    backgroundColor: '#ffd33d',
+    alignSelf: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  buttonText: {
+    color: '#25292e',
+    fontWeight: 'bold',
+  },
+});
+
+const eventStyles = StyleSheet.create({
+  card: {
+    backgroundColor: '#35383d',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  name: {
+    color: '#ffd33d',
+    fontSize: 18,
+    marginBottom: 4,
+  },
+  desc: {
+    color: '#fff',
+    marginBottom: 4,
+  },
+  price: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  specs: {
+    color: '#bbb',
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  button: {
+    backgroundColor: '#ffd33d',
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+  },
+  buttonText: {
+    color: '#25292e',
+    fontWeight: 'bold',
+  },
+});
+
+const overviewStyles = StyleSheet.create({
+  card: {
+    backgroundColor: '#35383d',
+    borderRadius: 8,
+    padding: 16,
+  },
+});
+
+const cartBarStyles = StyleSheet.create({
+  bar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#25292e',
+    padding: 16,
+  },
+  timeButton: {
+    backgroundColor: '#35383d',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  timeText: {
+    color: '#fff',
+  },
+  totalText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  checkout: {
+    backgroundColor: '#ffd33d',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+  },
+  checkoutText: {
+    color: '#25292e',
+    fontWeight: 'bold',
+  },
+});
+const webPickerStyles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modal: {
+    backgroundColor: '#35383d',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+});
+function DiningTab() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [mealItems, setMealItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [cart, setCart] = useState<Record<string, { item: any; qty: number }>>({});
+  const [mealTime, setMealTime] = useState<Date | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [tempHour, setTempHour] = useState<number>(12);
+  const [tempMinute, setTempMinute] = useState<number>(0);
+  const [tempPeriod, setTempPeriod] = useState<'AM' | 'PM'>('PM');
+  const [tempDate, setTempDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const total = Object.values(cart).reduce(
+    (sum, { item, qty }) => sum + (Number(item.price) || 0) * qty,
+    0
+  );
+
+  useEffect(() => {
+    (async () => {
+      if (!id) return;
+      try {
+        setLoading(true);
+        // Get dining service id
+        const { data: svc, error: svcErr } = await supabase
+          .from('services')
+          .select('id')
+          .eq('name', 'dining')
+          .single();
+        if (svcErr) throw svcErr;
+
+        // Dining resources under this property
+        const { data: resources, error: resErr } = await supabase
+          .from('resources')
+          .select('id')
+          .eq('property_id', id)
+          .eq('service_id', svc.id);
+        if (resErr) throw resErr;
+        const resourceIds = resources?.map((r) => r.id) || [];
+        if (resourceIds.length === 0) {
+          setMealItems([]);
+          return;
+        }
+
+        // Menus belonging to those resources
+        const { data: menus, error: menuErr } = await supabase
+          .from('menus')
+          .select('id')
+          .in('resource_id', resourceIds);
+        if (menuErr) throw menuErr;
+        const menuIds = menus?.map((m) => m.id) || [];
+        if (menuIds.length === 0) {
+          setMealItems([]);
+          return;
+        }
+
+        // Meal items for those menus
+        const { data: items, error: itemsErr } = await supabase
+          .from('meal_items')
+          .select('*')
+          .in('menu_id', menuIds);
+        if (itemsErr) throw itemsErr;
+        setMealItems(items || []);
+      } catch (err) {
+        console.error('[DiningTab] fetch meal items error', err);
+        setMealItems([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  const addToCart = (item: any) => {
+    setCart((prev) => {
+      const existing = prev[item.id];
+      return {
+        ...prev,
+        [item.id]: { item, qty: existing ? existing.qty + 1 : 1 },
+      };
+    });
+  };
+
+
+
+  const renderItem = ({ item }: { item: any }) => {
+    return (
+      <View style={mealStyles.card}>
+        <View style={{ flex: 1 }}>
+          <Text style={mealStyles.name}>{item.name}</Text>
+          <Text style={mealStyles.desc}>{item.description}</Text>
+          <Text style={mealStyles.price}>KES {Number(item.price).toFixed(0)}</Text>
+        </View>
+        <Pressable style={mealStyles.button} onPress={() => addToCart(item)}>
+          <Text style={mealStyles.buttonText}>Add</Text>
+        </Pressable>
+      </View>
+    );
+  };
+
+  const placeOrder = () => {
+    if (total === 0) {
+      Alert.alert('Cart empty', 'Please add items.');
+      return;
+    }
+    if (!mealTime) {
+      Alert.alert('Select time', 'Please pick a time to serve the meal.');
+      return;
+    }
+    // TODO: call edge function / RPC to persist order
+    const count = Object.values(cart).reduce((s, e) => s + e.qty, 0);
+    Alert.alert(
+      'Order placed',
+      `Total KES ${total.toFixed(0)} for ${count} items at ${mealTime?.toLocaleTimeString()}`
+    );
+    // reset
+    setCart({});
+    setMealTime(null);
+  };
+
+  if (loading) {
+    return (
+      <View style={[tabStyles.content, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={styles.text}>Loading menu...</Text>
+      </View>
+    );
+  }
+
+  if (mealItems.length === 0) {
+    return (
+      <View style={[tabStyles.content, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={styles.text}>No dining options found.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <FlatList
+        data={mealItems}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+      />
+      {/* Cart bar */}
+      <View style={cartBarStyles.bar}>
+        <TouchableOpacity
+          style={cartBarStyles.timeButton}
+          onPress={() => {
+            if (Platform.OS === 'web') {
+              const h24 = mealTime ? mealTime.getHours() : new Date().getHours();
+              const p = h24 >= 12 ? 'PM' : 'AM';
+              const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+              setTempHour(h12);
+              setTempPeriod(p as 'AM' | 'PM');
+              setTempMinute(mealTime ? mealTime.getMinutes() : 0);
+              setTempDate(mealTime ? mealTime.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+            }
+            setShowPicker(true);
+          }}
+        >
+          <Text style={cartBarStyles.timeText}>
+            {mealTime
+              ? mealTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : 'Pick Time'}
+          </Text>
+        </TouchableOpacity>
+        <Text style={cartBarStyles.totalText}>KES {total.toFixed(0)}</Text>
+        <Pressable
+          style={[cartBarStyles.checkout, { opacity: total === 0 ? 0.4 : 1 }]}
+          onPress={placeOrder}
+          disabled={total === 0}
+        >
+          <Text style={cartBarStyles.checkoutText}>Checkout</Text>
+        </Pressable>
+      </View>
+      {Platform.OS === 'web' && showPicker && (
+        <View style={webPickerStyles.overlay}>
+          <View style={webPickerStyles.modal}>
+            <Text style={{ color: '#fff', marginBottom: 8 }}>Select date & time</Text>
+            <input
+              type="date"
+              value={tempDate}
+              onChange={(e) => setTempDate((e.target as HTMLInputElement).value)}
+              style={{ marginBottom: 12, fontSize: 16 }}
+            />
+            <View style={{ flexDirection: 'row', marginBottom: 12, alignItems: 'center' }}>
+              <select
+                value={tempHour}
+                onChange={(e) => setTempHour(Number((e.target as HTMLSelectElement).value))}
+                style={{ marginRight: 6, fontSize: 16 }}
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                  <option key={h} value={h}>
+                    {h.toString().padStart(2, '0')}
+                  </option>
+                ))}
+              </select>
+              <Text style={{ color: '#fff' }}>:</Text>
+              <select
+                value={tempMinute}
+                onChange={(e) => setTempMinute(Number((e.target as HTMLSelectElement).value))}
+                style={{ marginLeft: 6, fontSize: 16 }}
+              >
+                {Array.from({ length: 60 }, (_, i) => i).map((m) => (
+                  <option key={m} value={m}>
+                    {m.toString().padStart(2, '0')}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={tempPeriod}
+                onChange={(e) => setTempPeriod((e.target as HTMLSelectElement).value as 'AM' | 'PM')}
+                style={{ marginLeft: 6, fontSize: 16 }}
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </View>
+            <Pressable
+              onPress={() => {
+                const d = new Date(tempDate + 'T00:00');
+                let hr24 = tempHour % 12;
+                if (tempPeriod === 'PM') hr24 += 12;
+                d.setHours(hr24);
+                d.setMinutes(tempMinute);
+                d.setSeconds(0);
+                setMealTime(d);
+                setShowPicker(false);
+              }}
+              style={{ backgroundColor: '#ffd33d', padding: 8, borderRadius: 4 }}
+            >
+              <Text style={{ color: '#25292e', fontWeight: 'bold' }}>Set</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+      {Platform.OS !== 'web' && showPicker && (
+        <DateTimePicker
+          value={mealTime || new Date()}
+          mode="time"
+          display="default"
+          onChange={(event, date) => {
+            setShowPicker(false);
+            if (date) setMealTime(date);
+          }}
+        />
+      )}
+    </>
+  );
+}
+function EventsTab() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        setLoading(true);
+        // Find event or events service id
+        const { data: svcs, error: svcErr } = await supabase
+          .from('services')
+          .select('id')
+          .in('name', ['event', 'events']);
+        if (svcErr) throw svcErr;
+        const svcId = svcs && svcs.length > 0 ? svcs[0].id : null;
+        if (!svcId) {
+          setEvents([]);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('resources')
+          .select('*')
+          .eq('property_id', id)
+          .eq('service_id', svcId);
+        if (error) throw error;
+        setEvents(data || []);
+      } catch (err) {
+        console.error('[EventsTab] fetch events error', err);
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <View style={[tabStyles.content, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color="#ffd33d" />
+      </View>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <View style={[tabStyles.content, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={styles.text}>No events listed for this property.</Text>
+      </View>
+    );
+  }
+
+  const renderItem = ({ item }: { item: any }) => (
+    <View style={eventStyles.card}>
+      <View style={{ flex: 1, paddingRight: 12 }}>
+      <Text style={eventStyles.name}>{item.name}</Text>
+      <Text style={eventStyles.desc}>{item.description}</Text>
+        {item.price != null && (
+          <Text style={eventStyles.price}>${item.price.toFixed(2)}</Text>
+        )}
+        {item.specifications && (
+          <Text style={eventStyles.specs}>{JSON.stringify(item.specifications)}</Text>
+        )}
+      </View>
+      <Pressable style={eventStyles.button} onPress={() => {}}>
+        <Text style={eventStyles.buttonText}>Book</Text>
+      </Pressable>
+    </View>
+  );
+
+  return (
+    <FlatList
+      data={events}
+      keyExtractor={(item) => item.id}
+      renderItem={renderItem}
+      contentContainerStyle={{ padding: 16 }}
+    />
+  );
+}
+
 export default function PropertyDetail() {
+  const navigationState = useNavigationState((state) => state);
+
+  const currentRouteName = (() => {
+    let navState: any = navigationState;
+    // Traverse down to the deepest active route (tab) inside property/[id]
+    while (navState?.routes && navState.routes[navState.index]?.state) {
+      navState = navState.routes[navState.index].state as any;
+    }
+    return navState?.routes ? navState.routes[navState.index].name : 'Overview';
+  })();
+
+  const bookingType: 'room' | 'meal' | 'event' =
+    currentRouteName === 'Rooms'
+      ? 'room'
+      : currentRouteName === 'Dining'
+      ? 'meal'
+      : currentRouteName === 'Events'
+      ? 'event'
+      : 'room';
+
+  // Debug logging
+  console.log('[PropertyDetail] routeNames', navigationState?.routeNames);
+  console.log('[PropertyDetail] currentRouteName', currentRouteName);
+  console.log('[PropertyDetail] bookingType', bookingType);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [property, setProperty] = useState<any>(null);
 
@@ -20,39 +722,70 @@ export default function PropertyDetail() {
 
   if (!property) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, styles.loading]}>
         <Text style={styles.text}>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View style={styles.wrapper}>
       <Image source={{ uri: property.image_url }} style={styles.hero} />
-      <Text style={styles.title}>{property.name}</Text>
-      <Text style={styles.text}>{property.description ?? 'No description yet.'}</Text>
-    </ScrollView>
+      <Tab.Navigator
+          initialRouteName="Overview"
+          screenOptions={{
+            tabBarStyle: { backgroundColor: '#25292e' },
+            tabBarActiveTintColor: '#ffd33d',
+            tabBarIndicatorStyle: { backgroundColor: '#ffd33d' },
+          }}
+        >
+          <Tab.Screen name="Overview" component={OverviewTab} />
+          <Tab.Screen name="Rooms" component={RoomsTab} />
+          <Tab.Screen name="Dining" component={DiningTab} />
+          <Tab.Screen name="Events" component={EventsTab} />
+        </Tab.Navigator>
+      
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
+  wrapper: {
+    flex: 1,
     backgroundColor: '#25292e',
+    paddingBottom: 0,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#25292e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loading: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   hero: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 16,
+    width: Dimensions.get('window').width,
+    height: 240,
   },
-  title: {
-    fontSize: 24,
-    color: '#fff',
-    marginBottom: 8,
-  },
+  /* placeholder unused styles
+  title: {},
+  text: {},
+  */
   text: {
     color: '#fff',
     fontSize: 16,
+  },
+});
+
+const tabStyles = StyleSheet.create({
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  heading: {
+    color: '#fff',
+    fontSize: 24,
   },
 });

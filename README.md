@@ -35,7 +35,7 @@ RLS is enabled on every table. Public users have read-only access to services an
 8. Migrations & Seeding
 Migrations now load roles, global functions, properties, services, resource types and managers. Seeds populate three sample resorts (Diani, Watamu, Lamu) with rooms, bars, venues, and appointed Swahili-named managers.
 
-# Next Steps (Q3 2025)
+# FrontEnd
 • Build front-end payment screens that create PaymentIntents and poll order status
 
 ---

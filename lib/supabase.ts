@@ -5,8 +5,8 @@ const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL as string
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string;
 
 // Diagnostic logging – remove or disable in production
-console.log('[Supabase] URL:', supabaseUrl);
-console.log('[Supabase] Anon Key present:', Boolean(supabaseAnonKey));
+//console.log('[Supabase] URL:', supabaseUrl);
+//console.log('[Supabase] Anon Key present:', Boolean(supabaseAnonKey));
 
 function createSupabase(): SupabaseClient {
   if (Platform.OS === 'web') {
