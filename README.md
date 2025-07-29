@@ -1,4 +1,29 @@
-Hospitality-App Backend – July 2025 Snapshot
+# Hospitality-App – July 2025 Snapshot
+
+Clone & run locally:
+
+```bash
+# 1. Clone repository
+ git clone https://github.com/joelmbaka/hospitality-app.git
+ cd hospitality-app
+
+# 2. Install dependencies (Expo + project packages)
+ npm install -g expo-cli  # if not already installed
+ npm install
+
+# 3. Configure environment variables
+ cp .env.example .env  # then edit with your Supabase & Stripe keys
+
+# 4. Start the Expo dev server (mobile & web)
+ expo start            # press 'w' for web, 'i' or 'a' for iOS/Android
+
+# Optional – build static web bundle for Vercel
+ npm run build:web     # outputs to `web-build/`
+```
+
+---
+
+# Backend 
 
 This Supabase-Postgres workspace powers a coastal-Kenya hospitality platform covering accommodation, dining and event services.
 
@@ -75,20 +100,19 @@ This section outlines the planned structure, navigation and visual language for 
 • Typography scale: H1 28, H2 22, body 16.
 
 **State / data**
-• Supabase JS as single source; wrap in `SupabaseProvider` context.
-• SWR or React Query for caching; subscribe to Realtime for orders & bookings.
-• `useAuth()` hook exposes user + role.
+• Supabase JS is the single data source.
+• Zustand store handles cart and lightweight client state.
+• `useAuth()` hook exposes user + role and surfaces Supabase session changes.
 
 **Accessibility & i18n**
 • All touchables ≥ 44×44 pt, color-contrast WCAG AA.
 • Plan i18n via `expo-localization`.
 
-**Offline & performance**
-• Persist critical tables (`properties`, `resources`) with SQLite cache.
+**Offline & performance (roadmap)**
 • Lazy-load images with blur-hash.
+• Add SQLite/IndexedDB cache for critical tables in a future iteration.
 
 **Testing**
 • Jest + @testing-library/react-native for components.
-• E2E with Detox on iOS & Android simulators.
 
 This roadmap will evolve as we flesh out the front-end but provides a clear blueprint for the next sprint.
