@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, Image, Dimensions, Platform, ScrollView } from 
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 
 import { useNavigationState } from '@react-navigation/native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../../../lib/supabase';
@@ -99,6 +99,8 @@ function RoomsTab() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [selectedResource, setSelectedResource] = useState<any | null>(null);
   const { initiateCheckout, loading: checkoutLoading } = useStripeCheckout();
+  const session = useSession();
+  const router = useRouter();
 
   useEffect(() => {
     if (!id) return;
@@ -168,6 +170,10 @@ function RoomsTab() {
 
   const reserveRoomWithSlot = async (room: any, slot: AvailabilitySlot) => {
     if (reserving || checkoutLoading) return;
+    if (!session) {
+      router.replace('/auth/sign-in');
+      return;
+    }
     try {
       setReserving(true);
       const { data: orderId, error: rpcErr } = await supabase.rpc('create_booking', {
@@ -198,6 +204,10 @@ function RoomsTab() {
 
   const reserveRoom = async (room: any) => {
     if (reserving || checkoutLoading) return;
+    if (!session) {
+      router.replace('/auth/sign-in');
+      return;
+    }
     try {
       setReserving(true);
       // 1. Fetch earliest open availability slot for this room
@@ -458,8 +468,9 @@ function DiningTab() {
   const [tempMinute, setTempMinute] = useState<number>(0);
   const [tempPeriod, setTempPeriod] = useState<'AM' | 'PM'>('PM');
   const [tempDate, setTempDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const session = useSession();
   const { initiateCheckout, loading: checkoutLoading } = useStripeCheckout();
+  const session = useSession();
+  const router = useRouter();
   const [placing, setPlacing] = useState(false);
 
   const total = Object.values(cart).reduce(
@@ -562,7 +573,7 @@ function DiningTab() {
     }
     console.log('[DiningTab] session', session);
     if (!session) {
-      Alert.alert('Sign in required', 'Please sign in to place an order.');
+      router.replace('/auth/sign-in');
       return;
     }
 
@@ -574,6 +585,7 @@ function DiningTab() {
         .from('orders')
         .insert({
           guest_id: session.user.id,
+          property_id: id,
           total,
           status: 'initiated',
         })
@@ -765,6 +777,8 @@ function EventsTab() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [selectedResource, setSelectedResource] = useState<any | null>(null);
   const { initiateCheckout, loading: checkoutLoading } = useStripeCheckout();
+  const session = useSession();
+  const router = useRouter();
 
   useEffect(() => {
     if (!id) return;
@@ -817,6 +831,10 @@ function EventsTab() {
 
   const bookEvent = async (evt: any) => {
     if (booking || checkoutLoading) return;
+    if (!session) {
+      router.replace('/auth/sign-in');
+      return;
+    }
     try {
       setBooking(true);
       // 1. Fetch earliest open availability slot for this event
@@ -867,6 +885,10 @@ function EventsTab() {
 
   const bookEventWithSlot = async (resource: any, slot: AvailabilitySlot) => {
     if (booking || checkoutLoading) return;
+    if (!session) {
+      router.replace('/auth/sign-in');
+      return;
+    }
     try {
       setBooking(true);
       const { data: orderId, error: rpcErr } = await supabase.rpc('create_booking', {

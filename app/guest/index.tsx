@@ -63,6 +63,7 @@ export default function Index() {
         )}
       </View>
       <FlatList
+        key={numColumns}
         data={properties}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -81,6 +82,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#25292e',
     paddingHorizontal: 16,
+    paddingTop: 10,
   },
   headerRow:{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:12},
   heading: { color:'#fff', fontSize:24},

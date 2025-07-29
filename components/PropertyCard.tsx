@@ -1,4 +1,5 @@
 import React from 'react';
+import { useWindowDimensions, ViewStyle } from 'react-native';
 import { Image, Pressable, StyleSheet, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -15,11 +16,14 @@ interface Props {
 }
 
 export default function PropertyCard({ property }: Props) {
+  const { width } = useWindowDimensions();
+  const isWide = width >= 768;
+  const cardDynamic: ViewStyle = isWide ? { width: '48%' } : { width: '100%' };
   const router = useRouter();
 
   return (
     <Pressable
-      style={styles.card}
+      style={[styles.card, cardDynamic]}
       onPress={() =>
         router.push({ pathname: '/guest/property/[id]' as any, params: { id: property.id } })
       }
@@ -39,10 +43,6 @@ export default function PropertyCard({ property }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
-    flexBasis: '48%',
-    maxWidth: '48%',
-    marginBottom: 16,
     backgroundColor: '#2c2f36',
     borderRadius: 8,
     overflow: 'hidden',
