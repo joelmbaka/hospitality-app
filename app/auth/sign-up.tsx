@@ -11,6 +11,7 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false);
 
   async function handleSignUp() {
+    if (!email || !password || !confirmPassword) return;
     if (password !== confirmPassword) {
       Alert.alert("Passwords don't match");
       return;
@@ -33,48 +34,58 @@ export default function SignUp() {
       <View style={[styles.verticallySpaced, styles.mt20]}>
         <Input
           label="Email"
-          leftIcon={{ type: 'font-awesome', name: 'envelope' }}
+          leftIcon={{ type: 'font-awesome', name: 'envelope', color: '#ffd33d' }}
           onChangeText={setEmail}
           value={email}
           placeholder="email@address.com"
           autoCapitalize="none"
+          inputStyle={{ color: '#fff' }}
+          labelStyle={{ color: '#ffd33d' }}
+          placeholderTextColor="#aaa"
           keyboardType="email-address"
         />
       </View>
       <View style={styles.verticallySpaced}>
         <Input
           label="Password"
-          leftIcon={{ type: 'font-awesome', name: 'lock' }}
+          leftIcon={{ type: 'font-awesome', name: 'lock', color: '#ffd33d' }}
           onChangeText={setPassword}
           value={password}
           secureTextEntry
           placeholder="Password"
           autoCapitalize="none"
+          inputStyle={{ color: '#fff' }}
+          labelStyle={{ color: '#ffd33d' }}
+          placeholderTextColor="#aaa"
         />
       </View>
       <View style={styles.verticallySpaced}>
         <Input
           label="Confirm Password"
-          leftIcon={{ type: 'font-awesome', name: 'lock' }}
+          leftIcon={{ type: 'font-awesome', name: 'lock', color: '#ffd33d' }}
           onChangeText={setConfirmPassword}
           value={confirmPassword}
           secureTextEntry
           placeholder="Confirm Password"
           autoCapitalize="none"
+          inputStyle={{ color: '#fff' }}
+          labelStyle={{ color: '#ffd33d' }}
+          placeholderTextColor="#aaa"
         />
       </View>
       <View style={[styles.verticallySpaced, styles.mt20]}>
         <Button 
           title="Create Account" 
-          disabled={loading} 
+          disabled={loading || !email || !password || !confirmPassword} 
           onPress={handleSignUp} 
-          buttonStyle={{ backgroundColor: '#2E7D32' }}
+          buttonStyle={{ backgroundColor: '#ffd33d' }}
+          titleStyle={{ color: '#000' }}
           loading={loading}
         />
       </View>
       <View style={styles.linkContainer}>
         <Link href="/auth/sign-in" style={styles.link}>
-          Already have an account? <Text style={{ color: '#2E7D32', fontWeight: 'bold' }}>Sign in</Text>
+          Already have an account? <Text style={{ color: '#ffd33d', fontWeight: 'bold' }}>Sign in</Text>
         </Link>
       </View>
     </View>
@@ -84,6 +95,7 @@ export default function SignUp() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#25292e',
     padding: 20,
     justifyContent: 'center'
   },
@@ -100,7 +112,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   link: {
-    color: '#2E7D32',
+    color: '#ffd33d',
     fontSize: 16,
     marginTop: 15,
     textAlign: 'center',
@@ -108,7 +120,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2E7D32',
+    color: '#ffd33d',
     textAlign: 'center',
     marginBottom: 20,
     textShadowColor: 'rgba(46, 125, 50, 0.3)',

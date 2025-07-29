@@ -40,9 +40,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="bookings"
+        name="orders"
         options={{
-          title: 'Bookings',
+          title: 'Orders',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'calendar' : 'calendar-outline'} color={color} size={24} />
           ),
@@ -58,10 +58,11 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* Hide about and property detail routes from tab bar */}
+      {/* Hide about, property detail, and modal routes from tab bar */}
       <Tabs.Screen name="about" options={{ href: null }} />
       <Tabs.Screen name="property" options={{ href: null }} />
       <Tabs.Screen name="property/[id]" options={{ href: null }} />
+      <Tabs.Screen name="SlotPickerModal" options={{ href: null }} />
     </Tabs>
   );
 }

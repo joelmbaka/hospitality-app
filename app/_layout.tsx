@@ -2,6 +2,8 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
+const GUEST_EXTRA_PAGES = ['payment-success', 'payment-cancel'];
+
 export default function RootLayout() {
   const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,7 +62,9 @@ export default function RootLayout() {
     if (role === 'property_manager') {
       if (!inManagerGroup) router.replace('/manager' as any);
     } else {
-      if (!inGuestGroup) router.replace('/guest' as any);
+      if (!inGuestGroup && !GUEST_EXTRA_PAGES.includes(segments[0] as string)) {
+        router.replace('/guest' as any);
+      }
     }
   }, [session, role, isLoading, segments]);
 

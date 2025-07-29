@@ -10,6 +10,7 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
 
   async function handleSignIn() {
+    if (!email || !password) return;
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -26,37 +27,44 @@ export default function SignIn() {
       <View style={[styles.verticallySpaced, styles.mt20]}>
         <Input
           label="Email"
-          leftIcon={{ type: 'font-awesome', name: 'envelope' }}
+          leftIcon={{ type: 'font-awesome', name: 'envelope', color: '#ffd33d' }}
           onChangeText={setEmail}
           value={email}
           placeholder="email@address.com"
           autoCapitalize="none"
           keyboardType="email-address"
+          inputStyle={{ color: '#fff' }}
+          labelStyle={{ color: '#ffd33d' }}
+          placeholderTextColor="#aaa"
         />
       </View>
       <View style={styles.verticallySpaced}>
         <Input
           label="Password"
-          leftIcon={{ type: 'font-awesome', name: 'lock' }}
+          leftIcon={{ type: 'font-awesome', name: 'lock', color: '#ffd33d' }}
           onChangeText={setPassword}
           value={password}
           secureTextEntry
           placeholder="Password"
           autoCapitalize="none"
+          inputStyle={{ color: '#fff' }}
+          labelStyle={{ color: '#ffd33d' }}
+          placeholderTextColor="#aaa"
         />
       </View>
       <View style={[styles.verticallySpaced, styles.mt20]}>
         <Button 
           title="Sign In" 
-          disabled={loading} 
+          disabled={loading || !email || !password} 
           onPress={handleSignIn} 
           loading={loading}
-          buttonStyle={{ backgroundColor: '#2E7D32' }}
+          buttonStyle={{ backgroundColor: '#ffd33d' }}
+          titleStyle={{ color: '#000' }}
         />
       </View>
       <View style={styles.linkContainer}>
         <Link href="/auth/sign-up" style={styles.link}>
-          Don't have an account? <Text style={{ color: '#2E7D32', fontWeight: 'bold' }}>Sign up</Text>
+          Don't have an account? <Text style={{ color: '#ffd33d', fontWeight: 'bold' }}>Sign up</Text>
         </Link>
       </View>
     </View>
@@ -66,6 +74,7 @@ export default function SignIn() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#25292e',
     padding: 20,
     justifyContent: 'center'
   },
@@ -82,7 +91,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   link: {
-    color: '#2E7D32',
+    color: '#ffd33d',
     fontSize: 16,
     marginTop: 15,
     textAlign: 'center',
@@ -90,7 +99,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2E7D32',
+    color: '#ffd33d',
     textAlign: 'center',
     marginBottom: 20,
     textShadowColor: 'rgba(46, 125, 50, 0.3)',

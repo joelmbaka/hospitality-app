@@ -19,9 +19,21 @@ function toCents(val: number | string | null): number {
   return Math.round(Number(n) * 100);
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 serve(async (req) => {
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
   try {
-    if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
+    if (req.method !== 'POST')
+      return new Response('Method not allowed', { status: 405, headers: corsHeaders });
 
     const { order_id } = await req.json();
     if (!order_id) return new Response('order_id required', { status: 400 });
@@ -53,18 +65,18 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      success_url: Deno.env.get('SUCCESS_URL') ?? 'https://example.com/payment-success',
-      cancel_url: Deno.env.get('CANCEL_URL') ?? 'https://example.com/payment-cancel',
+      success_url: Deno.env.get('SUCCESS_URL') ?? 'http://localhost:8081/payment-success',
+      cancel_url: Deno.env.get('CANCEL_URL') ?? 'http://localhost:8081/payment-cancel',
     });
 
     // 3. Update order status to pending
     await supabase.from('orders').update({ status: 'pending' }).eq('id', order_id);
 
     return new Response(JSON.stringify({ url: session.url }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
     console.error('create-checkout error:', err);
-    return new Response('Error', { status: 400 });
+    return new Response('Error', { status: 400, headers: corsHeaders });
   }
 });

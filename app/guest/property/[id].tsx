@@ -6,6 +6,9 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../../../lib/supabase';
+import useStripeCheckout from '../../hooks/useStripeCheckout';
+import useSession from '../../hooks/useSession';
+import SlotPickerModal, { AvailabilitySlot } from '../SlotPickerModal';
 
 
 const Tab = createMaterialTopTabNavigator();
@@ -92,6 +95,10 @@ function RoomsTab() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [resources, setResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reserving, setReserving] = useState<boolean>(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [selectedResource, setSelectedResource] = useState<any | null>(null);
+  const { initiateCheckout, loading: checkoutLoading } = useStripeCheckout();
 
   useEffect(() => {
     if (!id) return;
@@ -138,16 +145,97 @@ function RoomsTab() {
         <Text style={roomStyles.name}>{item.name}</Text>
         <Text style={roomStyles.desc}>{item.description}</Text>
         {item.price != null && (
-          <Text style={roomStyles.price}>${item.price.toFixed(2)}</Text>
+          <Text style={roomStyles.price}>KES {Number(item.price).toFixed(0)}</Text>
         )}
         <Text style={roomStyles.specs}>{JSON.stringify(item.specifications)}</Text>
         </View>
         {/* TODO: fetch availability status */}
-        <Pressable style={roomStyles.button} onPress={() => {}}>
+        <Pressable
+          style={roomStyles.button}
+          disabled={reserving || checkoutLoading}
+          onPress={() => openPicker(item)}
+        >
           <Text style={roomStyles.buttonText}>Reserve</Text>
         </Pressable>
       </View>
     );
+  };
+
+  const openPicker = (resource: any) => {
+    setSelectedResource(resource);
+    setPickerVisible(true);
+  };
+
+  const reserveRoomWithSlot = async (room: any, slot: AvailabilitySlot) => {
+    if (reserving || checkoutLoading) return;
+    try {
+      setReserving(true);
+      const { data: orderId, error: rpcErr } = await supabase.rpc('create_booking', {
+        i_resource_id: room.id,
+        i_start_ts: slot.start_ts,
+        i_end_ts: slot.end_ts,
+      });
+      if (rpcErr) throw rpcErr;
+      if (!orderId) {
+        Alert.alert('Reservation error', 'Could not create booking.');
+        return;
+      }
+      await initiateCheckout(orderId as unknown as string);
+    } catch (err: any) {
+      console.error('[RoomsTab] reserveRoomWithSlot error', err);
+      Alert.alert('Reservation error', err?.message || 'Something went wrong.');
+    } finally {
+      setReserving(false);
+    }
+  };
+
+  const handleSlotSelectRoom = (slot: AvailabilitySlot | null) => {
+    setPickerVisible(false);
+    if (slot && selectedResource) {
+      reserveRoomWithSlot(selectedResource, slot);
+    }
+  };
+
+  const reserveRoom = async (room: any) => {
+    if (reserving || checkoutLoading) return;
+    try {
+      setReserving(true);
+      // 1. Fetch earliest open availability slot for this room
+      const { data: slot, error: slotErr } = await supabase
+        .from('availability')
+        .select('start_ts, end_ts')
+        .eq('resource_id', room.id)
+        .eq('status', 'open')
+        .gt('start_ts', new Date().toISOString())
+        .order('start_ts')
+        .limit(1)
+        .single();
+      if (slotErr) throw slotErr;
+      if (!slot) {
+        Alert.alert('No availability', 'This room has no available slots.');
+        return;
+      }
+
+      // 2. Create booking + order via RPC (returns order_id)
+      const { data: orderId, error: rpcErr } = await supabase.rpc('create_booking', {
+        i_resource_id: room.id,
+        i_start_ts: slot.start_ts,
+        i_end_ts: slot.end_ts,
+      });
+      if (rpcErr) throw rpcErr;
+      if (!orderId) {
+        Alert.alert('Reservation error', 'Could not create booking.');
+        return;
+      }
+
+      // 3. Initiate Stripe Checkout
+      await initiateCheckout(orderId as unknown as string);
+    } catch (err: any) {
+      console.error('[RoomsTab] reserveRoom error', err);
+      Alert.alert('Reservation error', err?.message || 'Something went wrong.');
+    } finally {
+      setReserving(false);
+    }
   };
 
   if (resources.length === 0) {
@@ -159,12 +247,20 @@ function RoomsTab() {
   }
 
   return (
-    <FlatList
-      data={resources}
-      keyExtractor={(item) => item.id}
-      renderItem={renderItem}
-      contentContainerStyle={{ padding: 16 }}
-    />
+    <View style={{ flex: 1 }}>
+      <FlatList
+        data={resources}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={{ padding: 16 }}
+      />
+      <SlotPickerModal
+        visible={pickerVisible}
+        resourceId={selectedResource?.id ?? null}
+        onSelect={handleSlotSelectRoom}
+        onClose={() => handleSlotSelectRoom(null)}
+      />
+    </View>
   );
 }
 
@@ -362,6 +458,10 @@ function DiningTab() {
   const [tempMinute, setTempMinute] = useState<number>(0);
   const [tempPeriod, setTempPeriod] = useState<'AM' | 'PM'>('PM');
   const [tempDate, setTempDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const session = useSession();
+  const { initiateCheckout, loading: checkoutLoading } = useStripeCheckout();
+  const [placing, setPlacing] = useState(false);
+
   const total = Object.values(cart).reduce(
     (sum, { item, qty }) => sum + (Number(item.price) || 0) * qty,
     0
@@ -448,7 +548,10 @@ function DiningTab() {
     );
   };
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
+    console.log('[DiningTab] placeOrder start', { placing, checkoutLoading, total, mealTime, cart });
+    if (placing || checkoutLoading) return;
+
     if (total === 0) {
       Alert.alert('Cart empty', 'Please add items.');
       return;
@@ -457,15 +560,60 @@ function DiningTab() {
       Alert.alert('Select time', 'Please pick a time to serve the meal.');
       return;
     }
-    // TODO: call edge function / RPC to persist order
-    const count = Object.values(cart).reduce((s, e) => s + e.qty, 0);
-    Alert.alert(
-      'Order placed',
-      `Total KES ${total.toFixed(0)} for ${count} items at ${mealTime?.toLocaleTimeString()}`
-    );
-    // reset
-    setCart({});
-    setMealTime(null);
+    console.log('[DiningTab] session', session);
+    if (!session) {
+      Alert.alert('Sign in required', 'Please sign in to place an order.');
+      return;
+    }
+
+    try {
+      setPlacing(true);
+
+      // 1. Create order
+      const { data: order, error: orderErr } = await supabase
+        .from('orders')
+        .insert({
+          guest_id: session.user.id,
+          total,
+          status: 'initiated',
+        })
+        .select('id')
+        .single();
+
+      console.log('[DiningTab] order insert result', { order, orderErr });
+      if (orderErr || !order) {
+        throw orderErr || new Error('Failed to create order');
+      }
+
+      // 2. Insert order items
+      const orderItems = Object.values(cart).map(({ item, qty }) => ({
+        order_id: order.id,
+        meal_item_id: item.id,
+        quantity: qty,
+        price: Number(item.price) || 0,
+      }));
+
+      if (orderItems.length === 0) {
+        throw new Error('No items to order');
+      }
+
+      const { error: itemsErr } = await supabase.from('order_items').insert(orderItems);
+      console.log('[DiningTab] order_items insert', { itemsErr });
+      if (itemsErr) throw itemsErr;
+
+      // 3. Initiate Stripe Checkout
+      console.log('[DiningTab] initiating checkout');
+      await initiateCheckout(order.id);
+
+      // 4. Reset local cart & time on success
+      setCart({});
+      setMealTime(null);
+    } catch (err: any) {
+      console.error('[DiningTab] placeOrder error', err);
+      Alert.alert('Order error', err?.message || 'Something went wrong.');
+    } finally {
+      setPlacing(false);
+    }
   };
 
   if (loading) {
@@ -497,15 +645,22 @@ function DiningTab() {
         <TouchableOpacity
           style={cartBarStyles.timeButton}
           onPress={() => {
-            if (Platform.OS === 'web') {
-              const h24 = mealTime ? mealTime.getHours() : new Date().getHours();
-              const p = h24 >= 12 ? 'PM' : 'AM';
-              const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-              setTempHour(h12);
-              setTempPeriod(p as 'AM' | 'PM');
-              setTempMinute(mealTime ? mealTime.getMinutes() : 0);
-              setTempDate(mealTime ? mealTime.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
-            }
+             if (Platform.OS === 'web') {
+               // When no meal time is chosen yet, default the picker to the NEXT top of the hour
+               let base = mealTime ? new Date(mealTime) : new Date();
+               if (!mealTime) {
+                 // Move to next hour and zero the minutes/seconds
+                 base.setMinutes(0, 0, 0);
+                 base.setHours(base.getHours() + 1);
+               }
+               const h24 = base.getHours();
+               const p = h24 >= 12 ? 'PM' : 'AM';
+               const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+               setTempHour(h12);
+               setTempPeriod(p as 'AM' | 'PM');
+               setTempMinute(base.getMinutes());
+               setTempDate(base.toISOString().split('T')[0]);
+             }
             setShowPicker(true);
           }}
         >
@@ -517,9 +672,12 @@ function DiningTab() {
         </TouchableOpacity>
         <Text style={cartBarStyles.totalText}>KES {total.toFixed(0)}</Text>
         <Pressable
-          style={[cartBarStyles.checkout, { opacity: total === 0 ? 0.4 : 1 }]}
+          style={[
+            cartBarStyles.checkout,
+            { opacity: total === 0 || placing || checkoutLoading || !mealTime ? 0.4 : 1 },
+          ]}
           onPress={placeOrder}
-          disabled={total === 0}
+          disabled={total === 0 || placing || checkoutLoading || !mealTime}
         >
           <Text style={cartBarStyles.checkoutText}>Checkout</Text>
         </Pressable>
@@ -603,6 +761,10 @@ function EventsTab() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [booking, setBooking] = useState<boolean>(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [selectedResource, setSelectedResource] = useState<any | null>(null);
+  const { initiateCheckout, loading: checkoutLoading } = useStripeCheckout();
 
   useEffect(() => {
     if (!id) return;
@@ -653,31 +815,126 @@ function EventsTab() {
     );
   }
 
+  const bookEvent = async (evt: any) => {
+    if (booking || checkoutLoading) return;
+    try {
+      setBooking(true);
+      // 1. Fetch earliest open availability slot for this event
+      console.log('[EventsTab] fetching availability for', evt.id);
+      const { data: slots, error: slotErr } = await supabase
+        .from('availability')
+        .select('start_ts, end_ts')
+        .eq('resource_id', evt.id)
+        .eq('status', 'open')
+        .gt('start_ts', new Date().toISOString())
+        .order('start_ts')
+        .limit(1);
+      if (slotErr) throw slotErr;
+      console.log('[EventsTab] availability slots', slots);
+      const slot = Array.isArray(slots) && slots.length > 0 ? slots[0] : null;
+      if (slotErr) throw slotErr;
+      if (!slot) {
+        Alert.alert('No availability', 'This event has no available slots.');
+        return;
+      }
+
+      // 2. Create booking + order via RPC and get order_id
+      const { data: orderId, error: rpcErr } = await supabase.rpc('create_booking', {
+        i_resource_id: evt.id,
+        i_start_ts: slot.start_ts,
+        i_end_ts: slot.end_ts,
+      });
+      if (rpcErr) throw rpcErr;
+      if (!orderId) {
+        Alert.alert('Booking error', 'Could not create booking.');
+        return;
+      }
+
+      // 3. Initiate Stripe Checkout
+      await initiateCheckout(orderId as unknown as string);
+    } catch (err: any) {
+      console.error('[EventsTab] bookEvent error', err);
+      Alert.alert('Booking error', err?.message || 'Something went wrong.');
+    } finally {
+      setBooking(false);
+    }
+  };
+
+  const openPicker = (resource: any) => {
+    setSelectedResource(resource);
+    setPickerVisible(true);
+  };
+
+  const bookEventWithSlot = async (resource: any, slot: AvailabilitySlot) => {
+    if (booking || checkoutLoading) return;
+    try {
+      setBooking(true);
+      const { data: orderId, error: rpcErr } = await supabase.rpc('create_booking', {
+        i_resource_id: resource.id,
+        i_start_ts: slot.start_ts,
+        i_end_ts: slot.end_ts,
+      });
+      if (rpcErr) throw rpcErr;
+      if (!orderId) {
+        Alert.alert('Booking error', 'Could not create booking.');
+        return;
+      }
+      await initiateCheckout(orderId as unknown as string);
+    } catch (err: any) {
+      console.error('[EventsTab] bookEventWithSlot error', err);
+      Alert.alert('Booking error', err?.message || 'Something went wrong.');
+    } finally {
+      setBooking(false);
+    }
+  };
+
+  const handleSlotSelect = (slot: AvailabilitySlot | null) => {
+    setPickerVisible(false);
+    if (slot && selectedResource) {
+      bookEventWithSlot(selectedResource, slot);
+    }
+  };
+
   const renderItem = ({ item }: { item: any }) => (
     <View style={eventStyles.card}>
       <View style={{ flex: 1, paddingRight: 12 }}>
       <Text style={eventStyles.name}>{item.name}</Text>
       <Text style={eventStyles.desc}>{item.description}</Text>
         {item.price != null && (
-          <Text style={eventStyles.price}>${item.price.toFixed(2)}</Text>
+          <Text style={eventStyles.price}>KES {Number(item.price).toFixed(0)}</Text>
         )}
         {item.specifications && (
           <Text style={eventStyles.specs}>{JSON.stringify(item.specifications)}</Text>
         )}
       </View>
-      <Pressable style={eventStyles.button} onPress={() => {}}>
-        <Text style={eventStyles.buttonText}>Book</Text>
+      <Pressable
+        style={eventStyles.button}
+        disabled={booking || checkoutLoading}
+        onPress={() => openPicker(item)}>
+        {booking || checkoutLoading ? (
+          <ActivityIndicator color="#25292e" />
+        ) : (
+          <Text style={eventStyles.buttonText}>Book</Text>
+        )}
       </Pressable>
     </View>
   );
 
   return (
-    <FlatList
-      data={events}
-      keyExtractor={(item) => item.id}
-      renderItem={renderItem}
-      contentContainerStyle={{ padding: 16 }}
-    />
+    <View style={{ flex: 1 }}>
+      <FlatList
+        data={events}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={{ padding: 16 }}
+      />
+      <SlotPickerModal
+        visible={pickerVisible}
+        resourceId={selectedResource?.id ?? null}
+        onSelect={handleSlotSelect}
+        onClose={() => handleSlotSelect(null)}
+      />
+    </View>
   );
 }
 
