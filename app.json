@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "healthcare",
-    "slug": "healthcare",
+    "name": "hospitality",
+    "slug": "hospitality",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "healthcare",
+    "scheme": "hospitality",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.makajoe26.hospitality"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +38,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "38c7f17d-aafd-46de-89a1-3bb160b1844f"
+      }
     }
   }
 }
