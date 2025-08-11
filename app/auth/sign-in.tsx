@@ -2,23 +2,46 @@ import React, { useState } from 'react';
 import { Alert, StyleSheet, View, Text } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { Button, Input } from '@rneui/themed';
+import { useRouter } from 'expo-router';
 import { Link } from 'expo-router';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function handleSignIn() {
+    console.log('[SignIn] Attempting sign in');
     if (!email || !password) return;
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
 
-    if (error) Alert.alert(error.message);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      console.log('[SignIn] signInWithPassword response', {
+        user: data?.user?.id,
+        error,
+      });
+
+      if (error) {
+        Alert.alert(error.message);
+        setLoading(false);
+        return;
+      }
+
+      // Successful login, stop loading and navigate away
+      setLoading(false);
+      router.replace('/guest');
+      console.log('[SignIn] Navigation to /guest triggered');
+    } catch (err: any) {
+      console.error('[SignIn] signInWithPassword threw', err);
+      Alert.alert('Login error', err.message ?? 'Unknown error');
+      setLoading(false);
+    }
   }
 
   return (

@@ -9,6 +9,7 @@ import { supabase } from '../../../lib/supabase';
 import useStripeCheckout from '../../hooks/useStripeCheckout';
 import useSession from '../../hooks/useSession';
 import SlotPickerModal, { AvailabilitySlot } from '../SlotPickerModal';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 const Tab = createMaterialTopTabNavigator();
@@ -421,6 +422,14 @@ const cartBarStyles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 6,
   },
+  // Highlight styles when no time is selected
+  timeButtonHighlight: {
+    backgroundColor: '#ffd33d',
+  },
+  timeTextHighlight: {
+    color: '#25292e',
+    fontWeight: 'bold',
+  },
   timeText: {
     color: '#fff',
   },
@@ -472,6 +481,7 @@ function DiningTab() {
   const session = useSession();
   const router = useRouter();
   const [placing, setPlacing] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const total = Object.values(cart).reduce(
     (sum, { item, qty }) => sum + (Number(item.price) || 0) * qty,
@@ -650,12 +660,12 @@ function DiningTab() {
         data={mealItems}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 + insets.bottom }}
       />
       {/* Cart bar */}
-      <View style={cartBarStyles.bar}>
+      <View style={[cartBarStyles.bar, { bottom: insets.bottom }]}>
         <TouchableOpacity
-          style={cartBarStyles.timeButton}
+          style={[cartBarStyles.timeButton, !mealTime && cartBarStyles.timeButtonHighlight]}
           onPress={() => {
              if (Platform.OS === 'web') {
                // When no meal time is chosen yet, default the picker to the NEXT top of the hour
@@ -676,7 +686,7 @@ function DiningTab() {
             setShowPicker(true);
           }}
         >
-          <Text style={cartBarStyles.timeText}>
+          <Text style={[cartBarStyles.timeText, !mealTime && cartBarStyles.timeTextHighlight]}>
             {mealTime
               ? mealTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               : 'Pick Time'}

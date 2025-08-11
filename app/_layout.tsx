@@ -33,9 +33,11 @@ export default function RootLayout() {
         .eq('id', session.user.id)
         .single()
         .then(({ data, error }) => {
-          if (!error) {
-            setRole((data as any)?.role ?? 'guest');
+          // Even if error or no profile row, default to guest
+          if (error) {
+            console.warn('[RootLayout] profiles fetch error, defaulting role to guest', error);
           }
+          setRole((data as any)?.role ?? 'guest');
         });
     } else {
       setRole(null);

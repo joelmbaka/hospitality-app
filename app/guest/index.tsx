@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#25292e',
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 40,
   },
   headerRow:{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:12},
   heading: { color:'#fff', fontSize:24},

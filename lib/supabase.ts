@@ -1,12 +1,20 @@
+import 'react-native-url-polyfill/auto'
+import 'react-native-get-random-values'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { Platform } from 'react-native'
+
+// Polyfill for structuredClone (missing in some React Native environments like older Hermes)
+if (typeof (globalThis as any).structuredClone !== 'function') {
+  console.log('[Polyfill] Adding naive structuredClone polyfill');
+  (globalThis as any).structuredClone = (value: any) => JSON.parse(JSON.stringify(value));
+}
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL as string
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string;
 
 // Diagnostic logging – remove or disable in production
-//console.log('[Supabase] URL:', supabaseUrl);
-//console.log('[Supabase] Anon Key present:', Boolean(supabaseAnonKey));
+console.log('[Supabase] URL:', supabaseUrl);
+console.log('[Supabase] Key present:', Boolean(supabaseAnonKey));
 
 function createSupabase(): SupabaseClient {
   if (Platform.OS === 'web') {
@@ -31,3 +39,11 @@ function createSupabase(): SupabaseClient {
 }
 
 export const supabase = createSupabase()
+
+// Sign out automatically if the stored refresh token is invalid to clear corrupt session data
+supabase.auth.onAuthStateChange((event) => {
+  if ((event as string) === 'TOKEN_REFRESH_FAILED') {
+    console.warn('[Supabase] Detected invalid refresh token – signing out to clear session');
+    supabase.auth.signOut();
+  }
+});
