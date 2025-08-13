@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, Dimensions, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, Dimensions, Platform, ScrollView, Pressable } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 
 import { useNavigationState } from '@react-navigation/native';
@@ -10,6 +10,7 @@ import useStripeCheckout from '../../hooks/useStripeCheckout';
 import useSession from '../../hooks/useSession';
 import SlotPickerModal, { AvailabilitySlot } from '../SlotPickerModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 
 const Tab = createMaterialTopTabNavigator();
@@ -90,7 +91,7 @@ function OverviewTab() {
     </ScrollView>
   );
 }
-import { FlatList, Pressable, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { FlatList, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
 
 function RoomsTab() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -996,6 +997,8 @@ export default function PropertyDetail() {
   console.log('[PropertyDetail] currentRouteName', currentRouteName);
   console.log('[PropertyDetail] bookingType', bookingType);
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [property, setProperty] = useState<any>(null);
 
   useEffect(() => {
@@ -1019,6 +1022,12 @@ export default function PropertyDetail() {
 
   return (
     <View style={styles.wrapper}>
+      <Pressable
+        onPress={() => router.back()}
+        style={{ position: 'absolute', top: insets.top + 10, left: 16, zIndex: 99 }}
+      >
+        <Ionicons name="arrow-back" size={28} color="#000" />
+      </Pressable>
       <Image source={{ uri: property.image_url }} style={styles.hero} />
       <Tab.Navigator
           initialRouteName="Overview"
