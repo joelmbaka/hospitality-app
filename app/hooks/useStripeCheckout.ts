@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Linking, Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import useSession from './useSession';
@@ -49,12 +49,12 @@ export default function useStripeCheckout() {
         return;
       }
 
-      // Redirect to the Stripe Checkout hosted page
+      // Open Checkout inside the app (native) or full redirect on web
       const { url } = data;
       if (Platform.OS === 'web') {
         window.location.href = url;
       } else {
-        await Linking.openURL(url);
+        router.push({ pathname: '/guest/checkout' as any, params: { url } });
       }
     } catch (err: any) {
       console.error('[useStripeCheckout] unexpected error', err);

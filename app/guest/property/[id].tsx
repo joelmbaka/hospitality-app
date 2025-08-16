@@ -272,6 +272,12 @@ function RoomsTab() {
         onSelect={handleSlotSelectRoom}
         onClose={() => handleSlotSelectRoom(null)}
       />
+      {(reserving || checkoutLoading) && (
+        <View style={overlayStyles.overlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={overlayStyles.text}>Preparing checkout...</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -967,9 +973,34 @@ function EventsTab() {
         onSelect={handleSlotSelect}
         onClose={() => handleSlotSelect(null)}
       />
+      {(booking || checkoutLoading) && (
+        <View style={overlayStyles.overlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={overlayStyles.text}>Processing...</Text>
+        </View>
+      )}
     </View>
   );
 }
+
+// overlay styles
+const overlayStyles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  text: {
+    marginTop: 12,
+    color: '#fff',
+  },
+});
 
 export default function PropertyDetail() {
   const navigationState = useNavigationState((state) => state);
@@ -993,9 +1024,9 @@ export default function PropertyDetail() {
       : 'room';
 
   // Debug logging
-  console.log('[PropertyDetail] routeNames', navigationState?.routeNames);
-  console.log('[PropertyDetail] currentRouteName', currentRouteName);
-  console.log('[PropertyDetail] bookingType', bookingType);
+
+
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();

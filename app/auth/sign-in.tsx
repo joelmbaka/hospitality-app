@@ -85,6 +85,10 @@ export default function SignIn() {
           titleStyle={{ color: '#000' }}
         />
       </View>
+      {/* Demo credentials */}
+      <View style={styles.demoContainer}>
+        <Text style={styles.demoText}>Demo login: guest@gmail.com{`\n`}password: password</Text>
+      </View>
       <View style={styles.linkContainer}>
         <Link href="/auth/sign-up" style={styles.link}>
           Don't have an account? <Text style={{ color: '#ffd33d', fontWeight: 'bold' }}>Sign up</Text>
@@ -108,6 +112,15 @@ const styles = StyleSheet.create({
   },
   mt20: {
     marginTop: 20,
+  },
+  demoContainer: {
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  demoText: {
+    color: '#aaa',
+    fontSize: 14,
+    textAlign: 'center',
   },
   linkContainer: {
     marginTop: 15,

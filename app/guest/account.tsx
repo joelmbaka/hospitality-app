@@ -1,11 +1,13 @@
 import { Button, Input } from '@rneui/themed'
 import useRequireAuth from '../hooks/useRequireAuth'
 import useSession from '../hooks/useSession'
+import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native'
 import { supabase } from '../../lib/supabase'
 
 export default function AccountScreen() {
+  const router = useRouter();
   useRequireAuth();
   const session = useSession();
   const [isFetching, setIsFetching] = useState(true)
@@ -87,7 +89,7 @@ export default function AccountScreen() {
 
   if (!session) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#25292e' }}>
         <ActivityIndicator />
       </View>
     )
@@ -96,13 +98,34 @@ export default function AccountScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Input label="Email" value={session?.user?.email ?? ''} disabled />
+        <Input
+          label="Email"
+          value={session?.user?.email ?? ''}
+          disabled
+          inputStyle={{ color: '#fff' }}
+          labelStyle={{ color: '#ffd33d' }}
+          disabledInputStyle={{ color: '#aaa' }}
+        />
       </View>
       <View style={styles.verticallySpaced}>
-        <Input label="Username" value={username} onChangeText={(text) => setUsername(text)} />
+        <Input
+          label="Username"
+          value={username}
+          onChangeText={(text) => setUsername(text)}
+          inputStyle={{ color: '#fff' }}
+          labelStyle={{ color: '#ffd33d' }}
+          placeholderTextColor="#aaa"
+        />
       </View>
       <View style={styles.verticallySpaced}>
-        <Input label="Website" value={website} onChangeText={(text) => setWebsite(text)} />
+        <Input
+          label="Website"
+          value={website}
+          onChangeText={(text) => setWebsite(text)}
+          inputStyle={{ color: '#fff' }}
+          labelStyle={{ color: '#ffd33d' }}
+          placeholderTextColor="#aaa"
+        />
       </View>
 
       <View style={[styles.verticallySpaced, styles.mt20]}>
@@ -118,7 +141,10 @@ export default function AccountScreen() {
       <View style={styles.verticallySpaced}>
         <Button
           title="Sign Out"
-          onPress={() => supabase.auth.signOut()}
+          onPress={async () => {
+            await supabase.auth.signOut();
+            router.replace('/guest');
+          }}
           buttonStyle={{ backgroundColor: '#ff5252' }}
           titleStyle={{ color: '#fff', fontWeight: 'bold' }}
         />
@@ -129,7 +155,9 @@ export default function AccountScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 40,
+    flex: 1,
+    backgroundColor: '#25292e',
+    paddingTop: 20,
     padding: 12,
   },
   verticallySpaced: {

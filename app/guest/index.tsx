@@ -57,7 +57,7 @@ export default function Index() {
         {!session && (
           <Link href="/auth/sign-in" asChild>
             <Pressable style={styles.authButton}>
-              <Text style={styles.authButtonText}>Sign in / Sign up</Text>
+              <Text style={styles.authButtonText}>Sign in</Text>
             </Pressable>
           </Link>
         )}

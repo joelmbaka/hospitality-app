@@ -1,6 +1,8 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 export default function AuthLayout() {
+  const router = useRouter();
   return (
     <Stack screenOptions={{
       headerTitleAlign: 'center',
@@ -8,15 +10,25 @@ export default function AuthLayout() {
       <Stack.Screen 
         name="sign-in" 
         options={{ 
-          title: 'Sign In',
-          headerShown: false
+          title: '',
+          headerShown: true,
+          headerStyle: { backgroundColor: '#25292e' },
+          headerTintColor: '#fff',
+          headerLeft: () => (
+            <Ionicons name="arrow-back" size={24} color="#fff" style={{ marginLeft: 12 }} onPress={() => router.replace('/guest')} />
+          ),
         }} 
       />
       <Stack.Screen 
         name="sign-up" 
         options={{ 
-          title: 'Create Account',
-          headerShown: false
+          title: '',
+          headerShown: true,
+          headerStyle: { backgroundColor: '#25292e' },
+          headerTintColor: '#fff',
+          headerLeft: () => (
+            <Ionicons name="arrow-back" size={24} color="#fff" style={{ marginLeft: 12 }} onPress={() => router.replace('/guest')} />
+          ),
         }} 
       />
     </Stack>
