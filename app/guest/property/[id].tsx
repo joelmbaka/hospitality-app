@@ -11,6 +11,7 @@ import useSession from '../../hooks/useSession';
 import SlotPickerModal, { AvailabilitySlot } from '../SlotPickerModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import LoadingOverlay from '../../../components/LoadingOverlay';
 
 
 const Tab = createMaterialTopTabNavigator();
@@ -272,12 +273,7 @@ function RoomsTab() {
         onSelect={handleSlotSelectRoom}
         onClose={() => handleSlotSelectRoom(null)}
       />
-      {(reserving || checkoutLoading) && (
-        <View style={overlayStyles.overlay}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={overlayStyles.text}>Preparing checkout...</Text>
-        </View>
-      )}
+      <LoadingOverlay visible={reserving || checkoutLoading} message="Preparing checkout..." />
     </View>
   );
 }
@@ -783,6 +779,7 @@ function DiningTab() {
           }}
         />
       )}
+      <LoadingOverlay visible={placing || checkoutLoading} message="Preparing checkout..." />
     </>
   );
 }
@@ -973,34 +970,11 @@ function EventsTab() {
         onSelect={handleSlotSelect}
         onClose={() => handleSlotSelect(null)}
       />
-      {(booking || checkoutLoading) && (
-        <View style={overlayStyles.overlay}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={overlayStyles.text}>Processing...</Text>
-        </View>
-      )}
+      <LoadingOverlay visible={booking || checkoutLoading} message="Preparing checkout..." />
     </View>
   );
 }
 
-// overlay styles
-const overlayStyles = StyleSheet.create({
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  text: {
-    marginTop: 12,
-    color: '#fff',
-  },
-});
 
 export default function PropertyDetail() {
   const navigationState = useNavigationState((state) => state);

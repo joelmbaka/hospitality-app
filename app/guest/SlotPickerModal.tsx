@@ -25,6 +25,8 @@ interface Props {
 
 const SlotPickerModal: React.FC<Props> = ({ visible, resourceId, onSelect, onClose }) => {
   const [loading, setLoading] = useState(false);
+  // track selection for visual highlight
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
 
   useEffect(() => {
@@ -78,8 +80,13 @@ const SlotPickerModal: React.FC<Props> = ({ visible, resourceId, onSelect, onClo
               data={slots}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
-                <Pressable style={styles.slot} onPress={() => onSelect(item)}>
-                  <Text style={styles.text}>{formatSlot(item)}</Text>
+                <Pressable
+                  style={[styles.slot, item.id === selectedId && styles.slotSelected]}
+                  onPress={() => {
+                    setSelectedId(item.id);
+                    onSelect(item);
+                  }}>
+                  <Text style={[styles.text, item.id === selectedId && styles.slotSelectedText]}>{formatSlot(item)}</Text>
                 </Pressable>
               )}
               style={{ maxHeight: 300, width: '100%' }}
@@ -125,6 +132,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#555',
     width: '100%',
+  },
+  slotSelected: {
+    backgroundColor: '#ffd33d',
+  },
+  slotSelectedText: {
+    color: '#25292e',
+    fontWeight: 'bold',
   },
   closeBtn: {
     marginTop: 16,
